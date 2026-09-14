@@ -29,7 +29,7 @@ Houdini 20.0 ships **Python 3.10**, so the virtual environment must be built fro
 
 **Keep the versions aligned.** The Houdini build, the Python version and the PyTorch wheel all have to match: build the venv from the `python3XX` interpreter inside your own Houdini install, and install a PyTorch wheel that supports that Python version. If you are on a different Houdini build, adjust every path in this README accordingly — a venv built from the wrong Python will import fine in a terminal but fail inside Houdini.
 
-**Note on the `.hip` files.** They were last saved in Houdini 21.0.631, so opening them in 20.0.724 shows a version warning. They open and run normally — the warning can be dismissed.
+**Note on the `.hip` files.** They were last saved in Houdini 21.0.631, but the original version of the project was built in 20.0.724.
 
 ---
 
