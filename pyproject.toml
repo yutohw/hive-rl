@@ -1,0 +1,35 @@
+[project]
+name = "hive-rl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Yuto", email = "188888545+yutohw@users.noreply.github.com" }
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+hive-rl = "hive_rl:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+extend-exclude = ["trainer.py", "worker.py", "common.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
