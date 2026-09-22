@@ -13,21 +13,21 @@ Training runs headless through `hython` across multiple worker processes. Infere
 | `common.py` | Paths, PPO hyperparameters, network definition, GAE, curriculum, atomic file I/O |
 | `worker.py` | Rollout collector — one headless Houdini instance per worker |
 | `trainer.py` | Distributes assignments, gathers rollouts, runs the PPO update |
-| `houdini files.zip` | `worker_1.hip` (training environment) and `inference.hip` (inference environment) |
-| `inference cache.zip` | Recorded inference runs for the 5 default tracks |
-| `model/` | Trained weights — `Self_Driving_Agent_Example_01.pth` and periodic checkpoints |
+| — | Houdini scenes, inference caches and the trained model are published as [release assets](https://github.com/yutohw/hive-rl/releases/tag/v0.1.0-thesis), not tracked in git |
 
 ---
 
 ## Requirements
 
 - **Houdini 20.0.724** — the version the project was built and tested in
-- **Windows 10/11** — the scripts use Windows paths and `os.replace()` for atomic writes
+- **Windows 10** — the scripts use Windows paths and `os.replace()` for atomic writes
 - **PyTorch** (see setup below)
 
 Houdini 20.0 ships **Python 3.10**, so the virtual environment must be built from Houdini's own interpreter. The networks are small and run on CPU — CUDA is not required.
 
 **Keep the versions aligned.** The Houdini build, the Python version and the PyTorch wheel all have to match: build the venv from the `python3XX` interpreter inside your own Houdini install, and install a PyTorch wheel that supports that Python version. If you are on a different Houdini build, adjust every path in this README accordingly — a venv built from the wrong Python will import fine in a terminal but fail inside Houdini.
+
+**Before you start.** Download `houdini files.zip`, `inference cache.zip` and `Self_Driving_Agent_Example_01.pth` from the [latest release](https://github.com/yutohw/hive-rl/releases/latest) and place them in the repo root. The repository itself carries only source.
 
 **Note on the `.hip` files.** They were last saved in Houdini 21.0.631, but the original version of the project was built in 20.0.724.
 
@@ -103,7 +103,7 @@ num_workers = 5                           # must match the number of workers you
 
 ### 2. Create the worker scene files
 
-Only `worker_1.hip` ships in the repo. Each worker loads its own copy so that instances don't contend over the same file. Copy and rename it in `base_dir`:
+Only `worker_1.hip` ships in the release archive. Each worker loads its own copy so that instances don't contend over the same file. Copy and rename it in `base_dir`:
 
 ```
 base_dir\worker_1.hip
