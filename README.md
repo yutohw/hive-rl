@@ -10,9 +10,14 @@ Training runs headless through `hython` across multiple worker processes. Infere
 
 | File | Description |
 |---|---|
-| `common.py` | Paths, PPO hyperparameters, network definition, GAE, curriculum, atomic file I/O |
-| `worker.py` | Rollout collector — one headless Houdini instance per worker |
-| `trainer.py` | Distributes assignments, gathers rollouts, runs the PPO update |
+| `src/hive_rl/config.py` | Paths, environment constants, PPO hyperparameters, seeding |
+| `src/hive_rl/comms.py` | File-based messaging between trainer and workers (paths, atomic writes, cleanup) |
+| `src/hive_rl/curriculum.py` | Track selection schedule |
+| `src/hive_rl/model.py` | `ActorCritic` network and `TanhNormal` action distribution |
+| `src/hive_rl/ppo.py` | LR and entropy schedules, GAE, transition cap, PPO update |
+| `src/hive_rl/worker.py` | Rollout collector — one headless Houdini instance per worker |
+| `src/hive_rl/trainer.py` | Distributes assignments, gathers rollouts, runs the PPO update |
+| `tests/` | Smoke test and checkpoint-compatibility test (`uv run pytest`) |
 | — | Houdini scenes, inference caches and the trained model are published as [release assets](https://github.com/yutohw/hive-rl/releases/tag/v0.1.0-thesis), not tracked in git |
 
 ---
@@ -27,7 +32,7 @@ Houdini 20.0 ships **Python 3.10**, so the virtual environment must be built fro
 
 **Keep the versions aligned.** The Houdini build, the Python version and the PyTorch wheel all have to match: build the venv from the `python3XX` interpreter inside your own Houdini install, and install a PyTorch wheel that supports that Python version. If you are on a different Houdini build, adjust every path in this README accordingly — a venv built from the wrong Python will import fine in a terminal but fail inside Houdini.
 
-**Before you start.** Download `houdini files.zip`, `inference cache.zip` and `Self_Driving_Agent_Example_01.pth` from the [latest release](https://github.com/yutohw/hive-rl/releases/latest) and place them in the repo root. The repository itself carries only source.
+**Before you start.** Download `houdini.files.zip`, `inference.cache.zip` and `Self_Driving_Agent_Example_01.pth` from the [latest release](https://github.com/yutohw/hive-rl/releases/latest) and place them in the repo root. The repository itself carries only source.
 
 **Note on the `.hip` files.** They were last saved in Houdini 21.0.631, but the original version of the project was built in 20.0.724.
 
@@ -72,11 +77,11 @@ python -c "import torch; print(torch.__version__)"
 Open (or create) `C:\Users\<YourUsername>\Documents\houdini20.0\houdini.env` and add:
 
 ```
-PYTHONPATH = C:/Users/<YourUsername>/houdini_pytorch_env/Lib/site-packages;$PYTHONPATH
+PYTHONPATH = C:/Users/<YourUsername>/dev/hive-rl/src;C:/Users/<YourUsername>/houdini_pytorch_env/Lib/site-packages;$PYTHONPATH
 PATH = C:/Users/<YourUsername>/houdini_pytorch_env/Scripts;$PATH
 ```
 
-Use forward slashes and `;` separators. Houdini only reads this file at launch, so restart afterwards.
+The first entry is the `src` folder of your clone of this repo — it lets `hython` import the `hive_rl` package. Change it if your clone lives elsewhere. Use forward slashes and `;` separators. Houdini only reads this file at launch, so restart afterwards.
 
 ### 4. Confirm it works
 
@@ -92,7 +97,7 @@ If the GUI works but `hython` doesn't, `houdini.env` wasn't picked up.
 
 ## Part 2 — Training
 
-### 1. Set the paths in `common.py`
+### 1. Set the paths in `src/hive_rl/config.py`
 
 ```python
 base_dir = r"D:\your\project\folder"  # working directory
@@ -115,27 +120,32 @@ base_dir\worker_5.hip
 
 The count must match `num_workers`. If a worker's `.hip` is missing, or fewer workers are started than `num_workers`, the trainer waits forever for done flags that never arrive.
 
-### 3. Place the scripts
+### 3. Check `hython` can see the package
 
-Keep `common.py`, `worker.py` and `trainer.py` together in one folder. Both scripts import `common`, so they need to sit side by side.
+The scripts are run as modules of the `hive_rl` package, found through the `PYTHONPATH` entry added in Part 1. Check it from any folder:
+
+```bat
+"C:\Program Files\Side Effects Software\Houdini 20.0.724\bin\hython.exe" -c "import hive_rl, torch; print(hive_rl.__file__)"
+```
+
+It should print a path inside your clone's `src\hive_rl` folder.
 
 ### 4. Start the workers
 
 The venv does **not** need to be activated — `hython` picks up PyTorch through `houdini.env`. Open one terminal per worker and pass the worker ID as an argument:
 
 ```bat
-cd C:\path\to\scripts
-"C:\Program Files\Side Effects Software\Houdini 20.0.724\bin\hython.exe" worker.py 1
+"C:\Program Files\Side Effects Software\Houdini 20.0.724\bin\hython.exe" -m hive_rl.worker 1
 ```
 
-Repeat with `worker.py 2` through `worker.py 5` in separate terminals. Each worker prints `=== Worker N started, waiting for assignments ===` and then waits.
+Repeat with `hive_rl.worker 2` through `hive_rl.worker 5` in separate terminals. Each worker prints `=== Worker N started, waiting for assignments ===` and then waits.
 
-To launch all five at once, save this as `start_workers.bat` next to the scripts:
+To launch all five at once, save this as `start_workers.bat` anywhere:
 
 ```bat
 @echo off
 set HYTHON="C:\Program Files\Side Effects Software\Houdini 20.0.724\bin\hython.exe"
-for /L %%i in (1,1,5) do start "Worker %%i" %HYTHON% worker.py %%i
+for /L %%i in (1,1,5) do start "Worker %%i" %HYTHON% -m hive_rl.worker %%i
 ```
 
 Each worker is a full Houdini session, so check you have the licences and the RAM for the number you start.
@@ -145,8 +155,7 @@ Each worker is a full Houdini session, so check you have the licences and the RA
 In one more terminal:
 
 ```bat
-cd C:\path\to\scripts
-"C:\Program Files\Side Effects Software\Houdini 20.0.724\bin\hython.exe" trainer.py
+"C:\Program Files\Side Effects Software\Houdini 20.0.724\bin\hython.exe" -m hive_rl.trainer
 ```
 
 Each round it writes the current weights, assigns a track per worker, waits for all rollouts, runs the PPO update, and prints a summary line:
@@ -164,7 +173,7 @@ Round  120 | Episodes  600 | T0:287 | T2:412 | ... | Avg100  1843.21 | LR 4.98e-
 
 Since the final save only happens at the end of `num_episodes`, use the checkpoints if you stop early.
 
-Track selection follows a curriculum in `common.py` — track 0 only at first, widening to all five by 32% through training.
+Track selection follows a curriculum in `src/hive_rl/curriculum.py` — track 0 only at first, widening to all five by 32% through training.
 
 ---
 
@@ -188,6 +197,8 @@ model_path = r"C:\path\to\model\Self_Driving_Agent_Example_01.pth"  # any .pth f
 track = 3  # 0-4
 max_steps = 1440
 ```
+
+The node keeps its own copy of the network definition, so it does not import the `hive_rl` package. If you ever change `ActorCritic` in `src/hive_rl/model.py`, change it here too.
 
 `model_path` is the only value that must be changed — it is an absolute path. Point it at `Self_Driving_Agent_Example_01.pth` or any checkpoint in `model/`.
 
@@ -218,6 +229,23 @@ When it finishes, scrub the timeline to play back the recorded run.
 
 **Workers run but training doesn't improve.** Confirm each worker was started with a different ID — the seed is derived from it (`base_seed + worker_id * 1000`), and identical IDs produce identical rollouts.
 
-**`PermissionError` on files in `comms/`.** Two processes hit the same file. All writes go through the atomic helpers in `common.py`; check nothing else has the folder open.
+**`PermissionError` on files in `comms/`.** Two processes hit the same file. All writes go through the atomic helpers in `src/hive_rl/comms.py`; check nothing else has the folder open.
+
+**`ModuleNotFoundError: No module named 'hive_rl'`.** The `src` path in `houdini.env` is missing or wrong, or Houdini was not restarted after editing it.
 
 **Inference cache doesn't load.** Folder names must match the filecache paths exactly, including the Spa mismatch noted above.
+
+---
+
+## Development
+
+Linting and tests run in a normal uv environment, separate from Houdini's Python:
+
+```bat
+uv sync
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+```
+
+`hou` only exists inside Houdini, so the tests never import `worker.py` or `trainer.py`.
