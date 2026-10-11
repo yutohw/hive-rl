@@ -1,8 +1,22 @@
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=A0ulPi4lGK8">
+    <img src="https://i.ytimg.com/vi/A0ulPi4lGK8/hqdefault.jpg" alt="Watch the talk: Reinforcement Learning Within Houdini, Yuto Ikeda, HIVE alt London" width="640">
+  </a>
+</p>
+
+<h2 align="center">
+  ▶ <a href="https://www.youtube.com/watch?v=A0ulPi4lGK8">Watch the talk: Reinforcement Learning Within Houdini</a>
+</h2>
+
+<p align="center">Yuto · SideFX HIVE alt London</p>
+
 # Houdini Reinforcement Learning Race Car
 
 A self-driving race car trained inside SideFX Houdini. A PPO agent with continuous control (steer, throttle, brake) learns in a SOP training environment, with PyTorch handling the policy network. The agent observes the track through a lidar-based 18-dimensional state and is trained across 5 tracks using a curriculum.
 
 Training runs headless through `hython` across multiple worker processes. Inference runs inside the Houdini GUI from a Python Script node.
+
+This repo covers the self-driving-car half of the HIVE alt talk: the training code, plus the Houdini scenes as release assets.
 
 ---
 
@@ -34,7 +48,6 @@ Houdini 20.0 ships **Python 3.10**, so the virtual environment must be built fro
 
 **Before you start.** Download `houdini.files.zip`, `inference.cache.zip` and `Self_Driving_Agent_Example_01.pth` from the [latest release](https://github.com/yutohw/hive-rl/releases/latest) and place them in the repo root. The repository itself carries only source.
 
-**Note on the `.hip` files.** They were last saved in Houdini 21.0.631, but the original version of the project was built in 20.0.724.
 
 ---
 

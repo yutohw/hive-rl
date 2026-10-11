@@ -1,5 +1,7 @@
 """Self-driving race car trained with PPO inside SideFX Houdini.
 
+Talk: https://www.youtube.com/watch?v=A0ulPi4lGK8
+
 Modules:
     config      paths, environment constants, PPO hyperparameters, seeding
     comms       file-based messaging between trainer and workers

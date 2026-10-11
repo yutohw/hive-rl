@@ -12,6 +12,10 @@ dependencies = [
     "torch",
 ]
 
+[project.urls]
+Talk = "https://www.youtube.com/watch?v=A0ulPi4lGK8"
+Repository = "https://github.com/yutohw/hive-rl"
+
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
