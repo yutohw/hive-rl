@@ -1,26 +1,31 @@
-import sys
-import time
 import json
 import os
-import torch
-import hou
+import sys
+import time
+
 import common
+import hou
+import torch
 
 worker_id = sys.argv[1]
+
 
 def get_attr(node, name):
     return hou.node(node).geometry().attribValue(name)
 
+
 def set_parm(node, parm, value):
     hou.node(node).parm(parm).set(value)
+
 
 def cook(node):
     hou.node(node).cook(force=True)
 
+
 def reset_environment():
-    set_parm(f"{common.geo_node}/Steer",    "value1v1", 0.0)
+    set_parm(f"{common.geo_node}/Steer", "value1v1", 0.0)
     set_parm(f"{common.geo_node}/Throttle", "value1v1", 0.0)
-    set_parm(f"{common.geo_node}/Brake",    "value1v1", 0.0)
+    set_parm(f"{common.geo_node}/Brake", "value1v1", 0.0)
 
     hou.node(f"{common.geo_node}/Solver").parm("resimulate").pressButton()
 
@@ -30,6 +35,7 @@ def reset_environment():
     cook(f"{common.geo_node}/Stop")
     cook(f"{common.geo_node}/State")
     cook(f"{common.geo_node}/Output")
+
 
 def execute_training_recorder(round_number, return_value, track_value):
     set_parm(f"{common.geo_node}/Return", "value1v1", float(return_value))
@@ -43,6 +49,7 @@ def execute_training_recorder(round_number, return_value, track_value):
         recorder.cook(force=True)
         recorder.parm("execute").pressButton()
 
+
 def select_track(track_index):
     set_parm(f"{common.geo_node}/switch1", "input", track_index)
 
@@ -51,7 +58,7 @@ def run_episode(model):
     state = get_attr(f"{common.geo_node}/State", "state")
 
     states, actions, pre_tanhs, rewards, values, logps = [], [], [], [], [], []
-    episode_return     = 0.0
+    episode_return = 0.0
     speed_zero_counter = 0
     step = 0
 
@@ -60,18 +67,18 @@ def run_episode(model):
 
         with torch.no_grad():
             mean, std, value = model(state_t)
-            dist             = common.TanhNormal(mean, std)
-            raw_action, u    = dist.sample()
-            logp             = dist.log_prob(raw_action, u)
+            dist = common.TanhNormal(mean, std)
+            raw_action, u = dist.sample()
+            logp = dist.log_prob(raw_action, u)
 
-        final       = common.scale_actions(raw_action)
+        final = common.scale_actions(raw_action)
         steer_delta = float(final[0, 0])
-        throttle    = float(final[0, 1])
-        brake       = float(final[0, 2])
+        throttle = float(final[0, 1])
+        brake = float(final[0, 2])
 
-        set_parm(f"{common.geo_node}/Steer",    "value1v1", steer_delta)
+        set_parm(f"{common.geo_node}/Steer", "value1v1", steer_delta)
         set_parm(f"{common.geo_node}/Throttle", "value1v1", throttle)
-        set_parm(f"{common.geo_node}/Brake",    "value1v1", brake)
+        set_parm(f"{common.geo_node}/Brake", "value1v1", brake)
 
         hou.setFrame(hou.frame() + 1)
 
@@ -80,9 +87,9 @@ def run_episode(model):
         cook(f"{common.geo_node}/Output")
         cook(f"{common.geo_node}/Stop")
 
-        reward    = float(get_attr(f"{common.geo_node}/Reward", "reward"))
-        stop_flag = int(get_attr(f"{common.geo_node}/Stop",     "stop"))
-        speed     = float(get_attr(f"{common.geo_node}/State",  "speed"))
+        reward = float(get_attr(f"{common.geo_node}/Reward", "reward"))
+        stop_flag = int(get_attr(f"{common.geo_node}/Stop", "stop"))
+        speed = float(get_attr(f"{common.geo_node}/State", "speed"))
 
         if speed <= 10:
             speed_zero_counter += 1
@@ -113,7 +120,7 @@ def wait_for_assignment(round_num, poll_interval=0.05):
     while True:
         if os.path.exists(path):
             try:
-                with open(path, "r") as f:
+                with open(path) as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError):
                 pass
@@ -145,30 +152,43 @@ def main():
 
         assignment = wait_for_assignment(round_num)
 
-        track         = assignment["track"]
+        track = assignment["track"]
         should_record = assignment["record"]
-        weights_file  = assignment["weights_file"]
+        weights_file = assignment["weights_file"]
 
         if weights_file and os.path.exists(weights_file):
             if not load_weights(model, weights_file):
-                print(f"Worker {worker_id}: failed to load weights for round {round_num}, using previous weights")
+                print(
+                    f"Worker {worker_id}: failed to load weights for round {round_num}, using previous weights"
+                )
 
         select_track(track)
         reset_environment()
 
-        states, actions, pre_tanhs, rewards, values, logps, episode_return, steps_taken = run_episode(model)
+        states, actions, pre_tanhs, rewards, values, logps, episode_return, steps_taken = (
+            run_episode(model)
+        )
 
         returns, advantages = common.process_rollout(rewards, values)
         states, actions, pre_tanhs, logps, returns, advantages = common.cap_transitions(
             states, actions, pre_tanhs, logps, returns, advantages
         )
 
-        common.atomic_torch_save(common.rollout_path(worker_id, round_num), {
-            "states": states, "actions": actions, "pre_tanhs": pre_tanhs,
-            "logps": logps, "returns": returns, "advantages": advantages,
-            "episode_return": episode_return, "steps_taken": steps_taken,
-            "track": track, "worker_id": worker_id,
-        })
+        common.atomic_torch_save(
+            common.rollout_path(worker_id, round_num),
+            {
+                "states": states,
+                "actions": actions,
+                "pre_tanhs": pre_tanhs,
+                "logps": logps,
+                "returns": returns,
+                "advantages": advantages,
+                "episode_return": episode_return,
+                "steps_taken": steps_taken,
+                "track": track,
+                "worker_id": worker_id,
+            },
+        )
 
         if should_record:
             execute_training_recorder(round_num, episode_return, track)

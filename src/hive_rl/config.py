@@ -1,3 +1,8 @@
+"""Paths, environment constants, PPO hyperparameters and seeding.
+
+Edit ``base_dir`` and ``num_workers`` before training.
+"""
+
 import os
 import random
 
@@ -15,7 +20,7 @@ model_path = os.path.join(model_dir, "Self_Driving_Agent_Example_01.pth")
 
 
 def ensure_dirs() -> None:
-    """Create comms/ and model/ under base_dir if they do not exist."""
+    """Create ``comms/`` and ``model/`` under ``base_dir`` if they do not exist."""
     os.makedirs(comms_dir, exist_ok=True)
     os.makedirs(model_dir, exist_ok=True)
 
@@ -23,15 +28,16 @@ def ensure_dirs() -> None:
 # ===========================
 # Houdini environment
 # ===========================
-geo_node   = "/obj/Training_Environment"
+geo_node = "/obj/Training_Environment"
 
-state_dim  = 18
+state_dim = 18
 action_dim = 3  # steer, throttle, brake
 
 # ===========================
 # Seeding
 # ===========================
 base_seed = 27
+
 
 def seed_process(offset: int | str) -> None:
     """Seed torch, numpy and random with ``base_seed + offset * 1000``."""
@@ -40,36 +46,36 @@ def seed_process(offset: int | str) -> None:
     np.random.seed(s)
     random.seed(s)
 
+
 # ===========================
-# PPO Hyperparameters
+# PPO hyperparameters
 # ===========================
-learning_rate      = 5e-4
-learning_rate_min  = 5e-5
-gamma              = 0.997
-gae_lambda         = 0.95
-clip_epsilon       = 0.1
-ppo_epochs         = 6
+learning_rate = 5e-4
+learning_rate_min = 5e-5
+gamma = 0.997
+gae_lambda = 0.95
+clip_epsilon = 0.1
+ppo_epochs = 6
 
 entropy_coef_start = 0.05
-entropy_coef_end   = 0.001
+entropy_coef_end = 0.001
 
-value_coef         = 0.5
-max_grad_norm      = 0.5
+value_coef = 0.5
+max_grad_norm = 0.5
 
 log_std_min = -2.0
-log_std_max =  0.0
+log_std_max = 0.0
 
 num_episodes = 100000
-max_steps    = 1440
+max_steps = 1440
 
 # ===========================
 # Multi-worker
 # ===========================
 num_workers = 5
-worker_ids  = [str(i) for i in range(1, num_workers + 1)]
+worker_ids = [str(i) for i in range(1, num_workers + 1)]
 
 # ===========================
 # Transition cap per episode
 # ===========================
 max_transitions_per_episode = 300
-

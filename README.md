@@ -95,8 +95,8 @@ If the GUI works but `hython` doesn't, `houdini.env` wasn't picked up.
 ### 1. Set the paths in `common.py`
 
 ```python
-base_dir    = r"D:\your\project\folder"   # working directory
-num_workers = 5                           # must match the number of workers you start
+base_dir = r"D:\your\project\folder"  # working directory
+num_workers = 5  # must match the number of workers you start
 ```
 
 `comms/` and `model/` are created automatically under `base_dir`. `comms/` holds assignments, rollouts, per-round weights and done flags; old rounds are cleaned up automatically.
@@ -184,9 +184,9 @@ The filecache nodes read from `$HIP/Recording/`, so this resolves automatically 
 Open the Python Script node `Inference_Script` at object level and edit the config block at the top:
 
 ```python
-model_path = r"C:\path\to\model\Self_Driving_Agent_Example_01.pth"   # any .pth from model/
-track      = 3                                                       # 0-4
-max_steps  = 1440
+model_path = r"C:\path\to\model\Self_Driving_Agent_Example_01.pth"  # any .pth from model/
+track = 3  # 0-4
+max_steps = 1440
 ```
 
 `model_path` is the only value that must be changed — it is an absolute path. Point it at `Self_Driving_Agent_Example_01.pth` or any checkpoint in `model/`.
