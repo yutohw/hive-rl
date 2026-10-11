@@ -1,20 +1,34 @@
 [project]
 name = "hive-rl"
 version = "0.1.0"
-description = "Add your description here"
+description = "Self-driving race car trained with PPO inside SideFX Houdini"
 readme = "README.md"
 authors = [
     { name = "Yuto", email = "188888545+yutohw@users.noreply.github.com" }
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "numpy<2",
+    "torch",
+]
 
-[project.scripts]
-hive-rl = "hive_rl:main"
+[project.urls]
+Talk = "https://www.youtube.com/watch?v=A0ulPi4lGK8"
+Repository = "https://github.com/yutohw/hive-rl"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
+
+# Dev .venv only: take torch's CPU build on Linux/WSL instead of the
+# multi-GB CUDA build. Houdini gets torch from houdini_pytorch_env, not from here.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [dependency-groups]
 dev = [
@@ -25,8 +39,6 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-
-extend-exclude = ["trainer.py", "worker.py", "common.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
