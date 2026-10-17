@@ -1,0 +1,18 @@
+# Built inside the image instead
+.venv/
+
+# Not needed to lint or test
+.git/
+.github/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+
+# Large binaries and training output
+*.hip
+*.hipnc
+*.pth
+*.zip
+comms/
+model/
