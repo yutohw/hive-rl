@@ -24,4 +24,3 @@ def test_rewards_become_discounted_returns_and_normalised_advantages() -> None:
 
     assert np.mean(advantages) == pytest.approx(0.0, abs=1e-6)
     assert np.std(advantages) == pytest.approx(1.0, rel=1e-4)
-    

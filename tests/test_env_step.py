@@ -43,7 +43,7 @@ class FakeNode:
     def geometry(self) -> "FakeNode":
         return self
 
-    def attribValue(self, name:str) -> object:
+    def attribValue(self, name: str) -> object:
         return self.hou.attrib(name)
 
 
@@ -68,12 +68,12 @@ class FakeHou(types.ModuleType):
         values = {
             "state": [0.1 * self.current_frame] * config.state_dim,
             "reward": 1.0,
-            "stop": int(self.current_frame >=   CRASH_FRAME),
+            "stop": int(self.current_frame >= CRASH_FRAME),
             "speed": 50.0,
         }
         return values[name]
 
-    def parm_value(self, node:str, parm: str = "value1v1") -> float | None:
+    def parm_value(self, node: str, parm: str = "value1v1") -> float | None:
         return self.parms[(f"{config.geo_node}/{node}", parm)].value
 
 
@@ -90,8 +90,9 @@ def test_env_step_writes_actions_advances_frames_and_stops_on_crash(fake_hou: Fa
     torch.manual_seed(0)
     model = ActorCritic(config.state_dim, config.action_dim)
 
-    states, actions, pre_tanhs, rewards, values, logps, episode_return, last_step = (worker.run_episode(model))
-
+    states, actions, pre_tanhs, rewards, values, logps, episode_return, last_step = (
+        worker.run_episode(model)
+    )
 
     assert fake_hou.frame() == CRASH_FRAME
     assert last_step == CRASH_FRAME - 2
@@ -105,4 +106,3 @@ def test_env_step_writes_actions_advances_frames_and_stops_on_crash(fake_hou: Fa
     assert -1.0 <= fake_hou.parm_value("Steer") <= 1.0
     assert 0.0 <= fake_hou.parm_value("Throttle") <= 1.0
     assert 0.0 <= fake_hou.parm_value("Brake") <= 1.0
-    

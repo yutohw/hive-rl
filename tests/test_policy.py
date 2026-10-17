@@ -8,6 +8,7 @@ import torch
 from hive_rl import config
 from hive_rl.model import ActorCritic, TanhNormal, scale_actions
 
+
 def test_policy_forward_pass_shapes_and_action_ranges() -> None:
     torch.manual_seed(0)
     model = ActorCritic(config.state_dim, config.action_dim)
@@ -34,4 +35,3 @@ def test_policy_forward_pass_shapes_and_action_ranges() -> None:
     assert steer.abs().max().item() <= 1.0
     assert throttle.min().item() >= 0.0 and throttle.max().item() <= 1.0
     assert brake.min().item() >= 0.0 and brake.max().item() <= 1.0
-
