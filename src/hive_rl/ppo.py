@@ -48,7 +48,7 @@ def process_rollout(rewards: list[float], values: list[float]) -> tuple[list[flo
     returns = []
     discounted = 0.0
     for r in reversed(rewards):
-        discounted = r + discounted
+        discounted = r + config.gamma * discounted
         returns.insert(0, discounted)
 
     advantages = compute_gae(rewards, values)
