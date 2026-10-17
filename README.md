@@ -12,6 +12,8 @@
 
 # Houdini Reinforcement Learning Race Car
 
+[![CI](https://github.com/yutohw/hive-rl/actions/workflows/ci.yml/badge.svg)](https://github.com/yutohw/hive-rl/actions/workflows/ci.yml)
+
 A self-driving race car trained inside SideFX Houdini. A PPO agent with continuous control (steer, throttle, brake) learns in a SOP training environment, with PyTorch handling the policy network. The agent observes the track through a lidar-based 18-dimensional state and is trained across 5 tracks using a curriculum.
 
 Training runs headless through `hython` across multiple worker processes. Inference runs inside the Houdini GUI from a Python Script node.
@@ -31,7 +33,9 @@ This repo covers the self-driving-car half of the HIVE alt talk: the training co
 | `src/hive_rl/ppo.py` | LR and entropy schedules, GAE, transition cap, PPO update |
 | `src/hive_rl/worker.py` | Rollout collector — one headless Houdini instance per worker |
 | `src/hive_rl/trainer.py` | Distributes assignments, gathers rollouts, runs the PPO update |
-| `tests/` | Smoke test and checkpoint-compatibility test (`uv run pytest`) |
+| `tests/` | Environment step (fake hou), reward-to-return, policy forward pass, checkpoint keys, smoke test (uv run pytest) |
+| `Dockerfile` | Lint-and-test image (no Houdini) |
+| `.github/workflows/ci.yml` | Runs ruff and pytest on every push |
 | — | Houdini scenes, inference caches and the trained model are published as [release assets](https://github.com/yutohw/hive-rl/releases/tag/v0.1.0-thesis), not tracked in git |
 
 ---
@@ -254,11 +258,20 @@ When it finishes, scrub the timeline to play back the recorded run.
 
 Linting and tests run in a normal uv environment, separate from Houdini's Python:
 
-```bat
+```bash
 uv sync
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest
 ```
 
-`hou` only exists inside Houdini, so the tests never import `worker.py` or `trainer.py`.
+`hou` only exists inside Houdini. `tests/test_env_step.py` puts a small fake `hou` in its place to drive `worker.run_episode`; nothing else imports `worker.py` or `trainer.py`. The per-step reward is VEX inside the Houdini scene, so the reward test covers the Python side: turning rewards into returns and advantages.
+
+The same checks run in Docker, without installing anything locally:
+
+```bash
+docker build -t hive-rl .
+docker run --rm hive-rl
+```
+
+GitHub Actions runs them on every push (`.github/workflows/ci.yml`).
