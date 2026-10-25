@@ -54,6 +54,8 @@ The released policy, run once per circuit in the Houdini GUI and recorded to `in
 
 Rebuild the table from the caches with `hython -m hive_rl.results "<inference cache folder>"` (step 5 below).
 
+Training curves from a short demo run: [W&B project](https://forge.coreweave.com/wandb/yuto-yutohw/hive-rl).
+
 ---
 
 ## Reproduce
