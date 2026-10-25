@@ -138,5 +138,3 @@ def ppo_update(
             stats["clip_fraction"] += clipped.float().mean().item()
 
     return {k: v / config.ppo_epochs for k, v in stats.items()}
-
-    
