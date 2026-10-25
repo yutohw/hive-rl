@@ -99,7 +99,8 @@ def ppo_update(
     returns: Sequence[float],
     advantages: Sequence[float],
     entropy_coef: float,
-) -> None:
+) -> dict[str, float]:
+    """Run ``ppo_epochs`` of clipped PPO on one batch; return losses averaged over epochs."""
     states = torch.tensor(states, dtype=torch.float32)
     actions = torch.tensor(actions, dtype=torch.float32)
     pre_tanhs = torch.tensor(pre_tanhs, dtype=torch.float32)
@@ -107,6 +108,7 @@ def ppo_update(
     returns = torch.tensor(returns, dtype=torch.float32)
     advantages = torch.tensor(advantages, dtype=torch.float32)
 
+    stats = {"policy": 0.0, "value": 0.0, "entropy": 0.0, "approx_kl": 0.0, "clip_fraction": 0.0}
     for _ in range(config.ppo_epochs):
         mean, std, values = model(states)
         dist = TanhNormal(mean, std)
@@ -126,3 +128,15 @@ def ppo_update(
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
         optimizer.step()
+
+        with torch.no_grad():
+            stats["policy"] += policy_loss.item()
+            stats["value"] += value_loss.item()
+            stats["entropy"] += entropy.item()
+            stats["approx_kl"] += (log_probs_old - log_probs).mean().item()
+            clipped = (ratios - 1.0).abs() > config.clip_epsilon
+            stats["clip_fraction"] += clipped.float().mean().item()
+
+    return {k: v / config.ppo_epochs for k, v in stats.items()}
+
+    

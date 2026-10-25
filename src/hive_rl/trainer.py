@@ -13,7 +13,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 
-from hive_rl import comms, config
+from hive_rl import comms, config, tracking
 from hive_rl.curriculum import next_track_batch
 from hive_rl.model import ActorCritic
 from hive_rl.ppo import cosine_lr, linear_entropy_coef, ppo_update
@@ -44,6 +44,7 @@ def main() -> None:
 
     model = ActorCritic(config.state_dim, config.action_dim)
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
+    run = tracking.start_run()
 
     episode_returns = []
     best_return = -float("inf")
@@ -57,6 +58,7 @@ def main() -> None:
     round_num = 0
     while global_episode < config.num_episodes:
         round_num += 1
+        round_start = time.perf_counter()
 
         weights_file = comms.weights_round_path(round_num)
         comms.atomic_torch_save(weights_file, model.state_dict())
@@ -95,6 +97,7 @@ def main() -> None:
         batch_logps, batch_returns, batch_advantages = [], [], []
 
         round_summary = []
+        round_results = []
         for wid, track in zip(config.worker_ids, tracks, strict=True):
             rollout = load_rollout(wid, round_num)
 
@@ -110,14 +113,16 @@ def main() -> None:
 
             episode_returns.append(episode_return)
             round_summary.append((track, steps_taken))
+            round_results.append((track, episode_return, steps_taken + 1))
 
             global_episode += 1
             if global_episode >= last_10_start and episode_return > best_return:
                 best_return = episode_return
                 best_state_dict = {k: v.clone() for k, v in model.state_dict().items()}
 
+        losses = None
         if len(batch_states) > 1:
-            ppo_update(
+            losses = ppo_update(
                 model,
                 optimizer,
                 batch_states,
@@ -146,9 +151,26 @@ def main() -> None:
             f"LogStd {model.log_std.data.mean().item():.3f}"
         )
 
+        if run is not None:
+            metrics = tracking.round_metrics(
+                episodes=global_episode,
+                results=round_results,
+                avg_100=avg_100,
+                lr=current_lr,
+                entropy_coef=current_entropy_coef,
+                log_std=model.log_std.data.mean().item(),
+                seconds=time.perf_counter() - round_start,
+                losses=losses,
+            )
+            run.log(metrics, step=global_episode)
+
     torch.save(best_state_dict, config.model_path)
     print("\nTraining complete.")
     print(f"Best model from last 10% saved (Return {best_return:.2f})")
+
+    if run is not None:
+        run.summary["best_return"] = best_return
+        run.finish()
 
 
 if __name__ == "__main__":

@@ -12,6 +12,10 @@ dependencies = [
     "torch",
 ]
 
+[project.optional-dependencies]
+# Training logs. Install it into Houdini's Python (houdini_pytorch_env), not only here.
+wandb = ["wandb>=0.31"]
+
 [project.urls]
 Talk = "https://www.youtube.com/watch?v=A0ulPi4lGK8"
 Repository = "https://github.com/yutohw/hive-rl"

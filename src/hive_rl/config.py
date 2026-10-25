@@ -33,6 +33,8 @@ geo_node = "/obj/Training_Environment"
 state_dim = 18
 action_dim = 3  # steer, throttle, brake
 
+track_names = ("Monza", "Spa", "Barcelona", "Interlagos", "Silverstone")
+
 # ===========================
 # Seeding
 # ===========================
@@ -79,3 +81,9 @@ worker_ids = [str(i) for i in range(1, num_workers + 1)]
 # Transition cap per episode
 # ===========================
 max_transitions_per_episode = 300
+
+# ===========================
+# Experiment tracking (Weights & Biases)
+# ===========================
+use_wandb = True  # False, or WANDB_MODE=disabled, turns logging off
+wandb_project = "hive-rl"
